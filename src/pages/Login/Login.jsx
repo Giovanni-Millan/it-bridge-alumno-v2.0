@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import logo from "./../../assets/logo.png";
 import Swal from "sweetalert2";
 import { supabase } from "../../supabaseClient";
-import { Eye, EyeOff, LogIn, Key, Mail, GraduationCap, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, LogIn, Key, Mail, GraduationCap } from "lucide-react";
 
 export default function Login() {
   const [correo, setCorreo] = useState("");
@@ -10,53 +10,16 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [emailError, setEmailError] = useState("");
-
-  // Expresión regular: debe comenzar con "alu." y luego cualquier carácter, luego @ y dominio válido
-  const emailPattern = /^alu\..+@.+\..+$/;
-
-  // Validar correo en tiempo real
-  const validateEmail = (email) => {
-    if (!email) {
-      setEmailError("");
-      return false;
-    }
-    if (!emailPattern.test(email)) {
-      setEmailError("El correo debe comenzar con 'alu.' (ejemplo: alu.gabrielamacarior@itbridge.edu.mx)");
-      return false;
-    }
-    setEmailError("");
-    return true;
-  };
-
-  const handleEmailChange = (e) => {
-    const newEmail = e.target.value;
-    setCorreo(newEmail);
-    validateEmail(newEmail);
-  };
-
   useEffect(() => {
     const savedEmail = localStorage.getItem("rememberedEmail");
     if (savedEmail) {
       setCorreo(savedEmail);
-      validateEmail(savedEmail);
       setRememberMe(true);
     }
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validación del correo antes de enviar
-    if (!validateEmail(correo)) {
-      Swal.fire({
-        icon: "warning",
-        title: "Correo no válido",
-        text: "El correo debe comenzar con 'alu.' (ejemplo: alu.tunombre@itbridge.edu.mx)",
-        confirmButtonColor: "#6b21a5",
-      });
-      return;
-    }
 
     setLoading(true);
 
@@ -81,6 +44,17 @@ export default function Login() {
           icon: "error",
           title: "Error de autenticación",
           text: error.message,
+          confirmButtonColor: "#6b21a5",
+        });
+        return;
+      }
+
+      if (data.user?.app_metadata?.rol !== "alumno") {
+        await supabase.auth.signOut();
+        Swal.fire({
+          icon: "error",
+          title: "Sin acceso",
+          text: "Esta cuenta no tiene permiso para acceder al Portal del Alumno.",
           confirmButtonColor: "#6b21a5",
         });
         return;
@@ -123,16 +97,6 @@ export default function Login() {
       });
       return;
     }
-    if (!validateEmail(correo)) {
-      Swal.fire({
-        icon: "warning",
-        title: "Correo no válido",
-        text: "El correo debe comenzar con 'alu.'",
-        confirmButtonColor: "#6b21a5",
-      });
-      return;
-    }
-
     const { error } = await supabase.auth.resetPasswordForEmail(correo.trim(), {
       redirectTo: `${window.location.origin}/reset-password`,
     });
@@ -172,10 +136,10 @@ export default function Login() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Correo con validación */}
+            {/* Correo */}
             <div className="space-y-1">
               <label className="block text-sm font-semibold text-purple-800 ml-1">
-                Correo electrónico (debe comenzar con alu.)
+                Correo electrónico
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -183,21 +147,13 @@ export default function Login() {
                 </div>
                 <input
                   type="email"
-                  className={`w-full pl-10 pr-3 py-2.5 rounded-xl border ${
-                    emailError ? "border-red-500 ring-1 ring-red-500" : "border-purple-200"
-                  } focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition`}
-                  placeholder="alu.tunombre@itbridge.edu.mx"
+                  className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent transition"
+                  placeholder="tunombre@itbridge.edu.mx"
                   value={correo}
-                  onChange={handleEmailChange}
+                  onChange={(e) => setCorreo(e.target.value)}
                   required
                 />
               </div>
-              {emailError && (
-                <div className="flex items-center gap-1 text-xs text-red-600 mt-1">
-                  <AlertCircle size={14} />
-                  <span>{emailError}</span>
-                </div>
-              )}
             </div>
 
             {/* Contraseña */}
@@ -233,7 +189,7 @@ export default function Login() {
             {/* Botón de ingreso */}
             <button
               type="submit"
-              disabled={loading || !!emailError}
+              disabled={loading}
               className="w-full bg-gradient-to-r from-purple-700 to-purple-900 hover:from-purple-800 hover:to-purple-950 text-white font-bold py-2.5 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {loading ? (
@@ -266,7 +222,7 @@ export default function Login() {
             </div>
             <p className="text-xs text-purple-400 mt-4 flex items-center justify-center gap-1">
               <GraduationCap size={14} />
-              Acceso exclusivo para alumnos con correo institucional (alu.*)
+              Acceso exclusivo para alumnos con correo institucional
             </p>
           </div>
         </div>

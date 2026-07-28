@@ -8,10 +8,13 @@ import {
   faBars,
   faTimes,
   faCalendarAlt,
+  faLock,
+  faClockRotateLeft,
 } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { supabase } from "../../supabaseClient";
+import { isSeguimientoEmocionalHabilitado } from "../../utils/featureFlags";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -20,6 +23,7 @@ export default function Dashboard() {
   const [avisos, setAvisos] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [errorAvisos, setErrorAvisos] = useState(false);
+  const [seguimientoHabilitado, setSeguimientoHabilitado] = useState(true);
 
   // Obtener sesión y datos del alumno
   const fetchUserSession = async () => {
@@ -133,12 +137,34 @@ export default function Dashboard() {
     });
   };
 
+  // Consultar si el psicólogo(a) habilitó el módulo de Seguimiento Emocional
+  const fetchConfiguracion = async () => {
+    const habilitado = await isSeguimientoEmocionalHabilitado();
+    setSeguimientoHabilitado(habilitado);
+  };
+
   useEffect(() => {
     fetchUserSession();
     fetchAvisos();
+    fetchConfiguracion();
     const authListener = listenAuthChanges();
 
-    return () => authListener.subscription.unsubscribe();
+    // Escuchar en tiempo real si el psicólogo(a) cambia el interruptor
+    const configChannel = supabase
+      .channel("configuracion_sistema_alumno")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "configuracion_sistema" },
+        (payload) => {
+          setSeguimientoHabilitado(payload.new.seguimiento_emocional_habilitado);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      authListener.subscription.unsubscribe();
+      supabase.removeChannel(configChannel);
+    };
   }, []);
 
   // Construir nombre completo
@@ -240,13 +266,33 @@ export default function Dashboard() {
                 </li>
                 <li>
                   <Link
-                    to="/RealizarSeguimientoEmocional"
+                    to="/HistorialAcademico"
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-purple-50 text-gray-700"
                     onClick={() => setSidebarOpen(false)}
                   >
-                    <FontAwesomeIcon icon={faChartLine} className="text-purple-600" />
-                    Seguimiento Académico
+                    <FontAwesomeIcon icon={faClockRotateLeft} className="text-purple-600" />
+                    Historial Académico
                   </Link>
+                </li>
+                <li>
+                  {seguimientoHabilitado ? (
+                    <Link
+                      to="/RealizarSeguimientoEmocional"
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-purple-50 text-gray-700"
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <FontAwesomeIcon icon={faChartLine} className="text-purple-600" />
+                      Seguimiento Académico
+                    </Link>
+                  ) : (
+                    <span
+                      className="flex items-center gap-3 p-2 rounded-lg text-gray-400 cursor-not-allowed"
+                      title="Deshabilitado temporalmente por tu psicólogo(a)"
+                    >
+                      <FontAwesomeIcon icon={faLock} className="text-gray-400" />
+                      Seguimiento Académico
+                    </span>
+                  )}
                 </li>
               </ul>
             </div>
@@ -290,7 +336,7 @@ export default function Dashboard() {
         </div>
 
         {/* Tarjetas de acciones */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           <Link
             to="/ConsultarCalificaciones"
             className="group bg-gradient-to-br from-purple-900 to-purple-700 hover:shadow-xl transition-all duration-300 rounded-2xl p-6 text-white flex flex-col items-center text-center transform hover:-translate-y-1"
@@ -299,19 +345,43 @@ export default function Dashboard() {
               <FontAwesomeIcon icon={faGraduationCap} className="text-4xl" />
             </div>
             <h3 className="text-xl font-bold mb-1">Calificaciones</h3>
-            <p className="text-sm text-purple-100">Consulta tu rendimiento académico</p>
+            <p className="text-sm text-purple-100">Consulta tus calificaciones del ciclo actual</p>
           </Link>
 
           <Link
-            to="/RealizarSeguimientoEmocional"
-            className="group bg-gradient-to-br from-purple-800 to-purple-600 hover:shadow-xl transition-all duration-300 rounded-2xl p-6 text-white flex flex-col items-center text-center transform hover:-translate-y-1"
+            to="/HistorialAcademico"
+            className="group bg-gradient-to-br from-indigo-900 to-indigo-700 hover:shadow-xl transition-all duration-300 rounded-2xl p-6 text-white flex flex-col items-center text-center transform hover:-translate-y-1"
           >
             <div className="bg-white/20 rounded-full p-4 mb-4 group-hover:scale-110 transition">
-              <FontAwesomeIcon icon={faChartLine} className="text-4xl" />
+              <FontAwesomeIcon icon={faClockRotateLeft} className="text-4xl" />
             </div>
-            <h3 className="text-xl font-bold mb-1">Seguimiento Académico</h3>
-            <p className="text-sm text-purple-100">Monitorea tu progreso y bienestar</p>
+            <h3 className="text-xl font-bold mb-1">Historial Académico</h3>
+            <p className="text-sm text-indigo-100">Tu registro permanente de todas las materias cursadas</p>
           </Link>
+
+          {seguimientoHabilitado ? (
+            <Link
+              to="/RealizarSeguimientoEmocional"
+              className="group bg-gradient-to-br from-purple-800 to-purple-600 hover:shadow-xl transition-all duration-300 rounded-2xl p-6 text-white flex flex-col items-center text-center transform hover:-translate-y-1"
+            >
+              <div className="bg-white/20 rounded-full p-4 mb-4 group-hover:scale-110 transition">
+                <FontAwesomeIcon icon={faChartLine} className="text-4xl" />
+              </div>
+              <h3 className="text-xl font-bold mb-1">Seguimiento Académico</h3>
+              <p className="text-sm text-purple-100">Monitorea tu progreso y bienestar</p>
+            </Link>
+          ) : (
+            <div
+              className="bg-gray-100 border border-dashed border-gray-300 rounded-2xl p-6 text-gray-400 flex flex-col items-center text-center cursor-not-allowed"
+              title="Deshabilitado temporalmente por tu psicólogo(a)"
+            >
+              <div className="bg-gray-200 rounded-full p-4 mb-4">
+                <FontAwesomeIcon icon={faLock} className="text-4xl" />
+              </div>
+              <h3 className="text-xl font-bold mb-1">Seguimiento Académico</h3>
+              <p className="text-sm text-gray-400">No disponible temporalmente</p>
+            </div>
+          )}
         </div>
 
         {/* Sección de Avisos */}

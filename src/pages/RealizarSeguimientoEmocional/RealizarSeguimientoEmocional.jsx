@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
+import { isSeguimientoEmocionalHabilitado } from "../../utils/featureFlags";
 
 // Lista de preguntas (texto exacto del test)
 const preguntas = [
@@ -74,6 +75,19 @@ export default function RealizarSeguimientoEmocional() {
         }).then(() => navigate("/Login"));
         return;
       }
+
+      // Bloquear acceso directo por URL si el psicólogo(a) deshabilitó el módulo
+      const habilitado = await isSeguimientoEmocionalHabilitado();
+      if (!habilitado) {
+        Swal.fire({
+          icon: "info",
+          title: "No disponible",
+          text: "El seguimiento emocional está deshabilitado temporalmente por tu psicólogo(a).",
+          confirmButtonColor: "#6b21a8",
+        }).then(() => navigate("/dashboard"));
+        return;
+      }
+
       setUserEmail(data.session.user.email);
       setUserId(data.session.user.id);
     };

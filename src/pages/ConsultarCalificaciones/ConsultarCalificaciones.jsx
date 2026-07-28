@@ -11,9 +11,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 
-export default function HistorialAcademicoAlumno() {
+export default function ConsultarCalificaciones() {
 
-  const [alumno, setAlumno] = useState([]);
+  const [universidad, setUniversidad] = useState([]);
+  const [bachillerato, setBachillerato] = useState([]);
   const [infoAlumno, setInfoAlumno] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +50,7 @@ export default function HistorialAcademicoAlumno() {
 
         setInfoAlumno(alumnoInfo);
 
-        // 🧾 Obtener calificaciones por ID
+        // 🧾 Calificaciones de Universidad (tabla "calificaciones")
         const { data: calificaciones, error: errorCal } =
           await supabase
             .from("calificaciones")
@@ -66,7 +67,44 @@ export default function HistorialAcademicoAlumno() {
 
         if (errorCal) throw errorCal;
 
-        setAlumno(calificaciones);
+        // 🧾 Calificaciones de Bachillerato (tabla "calificaciones_parciales",
+        // 3 parciales por materia en vez de una sola calificación final)
+        const { data: parciales, error: errorParciales } =
+          await supabase
+            .from("calificaciones_parciales")
+            .select(`
+              id,
+              materia,
+              parcial,
+              calificacion,
+              registrado_en
+            `)
+            .eq("id_alumno", alumnoInfo.id)
+            .order("materia", { ascending: true })
+            .order("parcial", { ascending: true });
+
+        if (errorParciales) throw errorParciales;
+
+        // Una fila por materia con sus 3 parciales juntos (en vez de una
+        // fila repetida por cada parcial), más el promedio de esa materia.
+        const materiasBachillerato = {};
+        (parciales || []).forEach((p) => {
+          if (!materiasBachillerato[p.materia]) {
+            materiasBachillerato[p.materia] = { materia: p.materia, parcial1: null, parcial2: null, parcial3: null };
+          }
+          materiasBachillerato[p.materia][`parcial${p.parcial}`] = p.calificacion;
+        });
+
+        const bachilleratoAgrupado = Object.values(materiasBachillerato).map((m) => {
+          const capturados = [m.parcial1, m.parcial2, m.parcial3].filter((c) => c !== null).map(Number);
+          const promedio = capturados.length
+            ? capturados.reduce((acc, v) => acc + v, 0) / capturados.length
+            : null;
+          return { ...m, promedio };
+        });
+
+        setUniversidad(calificaciones || []);
+        setBachillerato(bachilleratoAgrupado);
 
       } catch (err) {
 
@@ -91,18 +129,24 @@ export default function HistorialAcademicoAlumno() {
   }, []);
 
   // ================= PROMEDIO =================
+  // Un valor final por materia (la calificación de universidad, o el
+  // promedio de los parciales capturados en bachillerato), para que una
+  // materia con 3 parciales no pese más que una con una sola calificación.
+
+  const totalMaterias = universidad.length + bachillerato.length;
 
   const calcularPromedio = () => {
 
-    const validas = alumno
-      .map(a => Number(a.calificacion))
-      .filter(c => !isNaN(c));
+    const finalesPorMateria = [
+      ...universidad.map((u) => Number(u.calificacion)),
+      ...bachillerato.map((b) => b.promedio),
+    ].filter((c) => c !== null && !isNaN(c));
 
-    if (validas.length === 0) return 0;
+    if (finalesPorMateria.length === 0) return 0;
 
-    const suma = validas.reduce((acc, val) => acc + val, 0);
+    const suma = finalesPorMateria.reduce((acc, val) => acc + val, 0);
 
-    return (suma / validas.length).toFixed(1);
+    return (suma / finalesPorMateria.length).toFixed(1);
 
   };
 
@@ -135,7 +179,7 @@ export default function HistorialAcademicoAlumno() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-100">
 
-      <Navbar titulo="Historial Académico" />
+      <Navbar titulo="Mis Calificaciones" />
 
       <div className="max-w-6xl mx-auto px-6 py-10">
 
@@ -216,7 +260,7 @@ export default function HistorialAcademicoAlumno() {
               </p>
 
               <p className="text-3xl font-bold text-green-700">
-                {alumno.length}
+                {totalMaterias}
               </p>
 
             </div>
@@ -241,118 +285,86 @@ export default function HistorialAcademicoAlumno() {
 
         </div>
 
-        {/* TABLA */}
+        {totalMaterias === 0 && (
+          <div className="bg-white rounded-2xl shadow-lg p-10 text-center text-gray-500">
+            No hay calificaciones registradas
+          </div>
+        )}
 
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        {/* TABLA UNIVERSIDAD */}
 
-          <table className="min-w-full">
-
-            <thead className="bg-purple-600 text-white">
-
-              <tr>
-
-                <th className="py-3 px-6 text-left">
-                  Materia
-                </th>
-
-                <th className="py-3 px-4 text-center">
-                  Periodo
-                </th>
-
-                <th className="py-3 px-4 text-center">
-                  Año
-                </th>
-
-                <th className="py-3 px-4 text-center">
-                  Calificación
-                </th>
-
-                <th className="py-3 px-4 text-center">
-                  Estado
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {alumno.length === 0 ? (
-
+        {universidad.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+            <table className="min-w-full">
+              <thead className="bg-purple-600 text-white">
                 <tr>
-
-                  <td
-                    colSpan="5"
-                    className="text-center py-10 text-gray-500"
-                  >
-
-                    No hay calificaciones registradas
-
-                  </td>
-
+                  <th className="py-3 px-6 text-left">Materia</th>
+                  <th className="py-3 px-4 text-center">Periodo</th>
+                  <th className="py-3 px-4 text-center">Año</th>
+                  <th className="py-3 px-4 text-center">Calificación</th>
+                  <th className="py-3 px-4 text-center">Estado</th>
                 </tr>
-
-              ) : (
-
-                alumno.map((data, i) => {
-
+              </thead>
+              <tbody>
+                {universidad.map((data) => {
                   const cal = Number(data.calificacion);
-
                   return (
-
-                    <tr
-                      key={i}
-                      className="border-b hover:bg-purple-50"
-                    >
-
-                      <td className="py-3 px-6">
-                        {data.materia}
-                      </td>
-
+                    <tr key={data.id} className="border-b hover:bg-purple-50">
+                      <td className="py-3 px-6">{data.materia}</td>
+                      <td className="py-3 px-4 text-center">{data.periodo_cuatrimestre ?? "-"}</td>
+                      <td className="py-3 px-4 text-center">{data.ano_cuatrimestre ?? "-"}</td>
+                      <td className="py-3 px-4 text-center font-bold">{cal}</td>
                       <td className="py-3 px-4 text-center">
-                        {data.periodo_cuatrimestre}
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-                        {data.ano_cuatrimestre}
-                      </td>
-
-                      <td className="py-3 px-4 text-center font-bold">
-                        {cal}
-                      </td>
-
-                      <td className="py-3 px-4 text-center">
-
-                        <span
-                          className={`
-                            px-3
-                            py-1
-                            rounded-full
-                            text-xs
-                            font-semibold
-                            ${obtenerColor(cal)}
-                          `}
-                        >
-
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${obtenerColor(cal)}`}>
                           {obtenerEstado(cal)}
-
                         </span>
-
                       </td>
-
                     </tr>
-
                   );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-                })
+        {/* TABLA BACHILLERATO: una fila por materia, sus 3 parciales juntos */}
 
-              )}
-
-            </tbody>
-
-          </table>
-
-        </div>
+        {bachillerato.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <table className="min-w-full">
+              <thead className="bg-purple-600 text-white">
+                <tr>
+                  <th className="py-3 px-6 text-left">Materia</th>
+                  <th className="py-3 px-4 text-center">Parcial 1</th>
+                  <th className="py-3 px-4 text-center">Parcial 2</th>
+                  <th className="py-3 px-4 text-center">Parcial 3</th>
+                  <th className="py-3 px-4 text-center">Promedio</th>
+                  <th className="py-3 px-4 text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bachillerato.map((m) => (
+                  <tr key={m.materia} className="border-b hover:bg-purple-50">
+                    <td className="py-3 px-6">{m.materia}</td>
+                    <td className="py-3 px-4 text-center">{m.parcial1 ?? "-"}</td>
+                    <td className="py-3 px-4 text-center">{m.parcial2 ?? "-"}</td>
+                    <td className="py-3 px-4 text-center">{m.parcial3 ?? "-"}</td>
+                    <td className="py-3 px-4 text-center font-bold">
+                      {m.promedio !== null ? m.promedio.toFixed(1) : "-"}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {m.promedio !== null && (
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${obtenerColor(m.promedio)}`}>
+                          {obtenerEstado(m.promedio)}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
       </div>
 
