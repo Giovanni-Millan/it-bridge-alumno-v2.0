@@ -40,7 +40,7 @@ export default function Dashboard() {
     // Obtener datos del alumno desde tabla "alumnos"
     const { data: alumnoData, error: alumnoError } = await supabase
       .from("alumnos")
-      .select("id, nombre, apellido_paterno, apellido_materno, correo")
+      .select("id, nombre, apellido_paterno, apellido_materno, correo, foto_url")
       .eq("id", userId)
       .single();
 
@@ -175,7 +175,11 @@ export default function Dashboard() {
   // Función para obtener iniciales para avatar fallback
   const getInitials = () => {
     if (!alumno) return "A";
-    return `${alumno.nombre[0]}${alumno.apellido_paterno[0]}`.toUpperCase();
+    return [alumno.nombre, alumno.apellido_paterno, alumno.apellido_materno]
+      .filter(Boolean)
+      .map((p) => p.trim()[0])
+      .join("")
+      .toUpperCase();
   };
 
   if (loading) {
