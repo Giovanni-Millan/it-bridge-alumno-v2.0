@@ -60,6 +60,27 @@ export default function Login() {
         return;
       }
 
+      // Candado de negocio (no es un baneo de Auth): el admin puede marcar
+      // `alumnos.acceso_bloqueado` desde "Bloqueo de Acceso" — típicamente
+      // por falta de pago. Las credenciales son correctas, pero no se le
+      // deja entrar y se le explica por qué.
+      const { data: alumnoData } = await supabase
+        .from("alumnos")
+        .select("acceso_bloqueado")
+        .eq("id", data.user.id)
+        .single();
+
+      if (alumnoData?.acceso_bloqueado) {
+        await supabase.auth.signOut();
+        Swal.fire({
+          icon: "warning",
+          title: "Acceso bloqueado",
+          text: "Tu acceso al Portal del Alumno está bloqueado por falta de pago. Realiza tu pago y contacta al administrador para reactivarlo.",
+          confirmButtonColor: "#6b21a5",
+        });
+        return;
+      }
+
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", correo.trim());
       } else {

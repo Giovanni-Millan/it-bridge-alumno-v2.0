@@ -40,7 +40,7 @@ export default function Dashboard() {
     // Obtener datos del alumno desde tabla "alumnos"
     const { data: alumnoData, error: alumnoError } = await supabase
       .from("alumnos")
-      .select("id, nombre, apellido_paterno, apellido_materno, correo, foto_url")
+      .select("id, nombre, apellido_paterno, apellido_materno, correo, foto_url, acceso_bloqueado")
       .eq("id", userId)
       .single();
 
@@ -53,6 +53,22 @@ export default function Dashboard() {
         confirmButtonColor: "#6b21a5",
       });
       setLoading(false);
+      return;
+    }
+
+    // Mismo candado de negocio que en Login: si el admin bloqueó el acceso
+    // (típicamente por falta de pago) mientras la sesión seguía abierta en
+    // este navegador, se cierra aquí también en vez de dejar ver el resto
+    // del portal.
+    if (alumnoData?.acceso_bloqueado) {
+      await supabase.auth.signOut();
+      Swal.fire({
+        icon: "warning",
+        title: "Acceso bloqueado",
+        text: "Tu acceso al Portal del Alumno está bloqueado por falta de pago. Realiza tu pago y contacta al administrador para reactivarlo.",
+        confirmButtonColor: "#6b21a5",
+      });
+      navigate("/");
       return;
     }
 
