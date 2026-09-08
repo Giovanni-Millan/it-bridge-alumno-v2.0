@@ -56,6 +56,7 @@ export default function HistorialAcademico() {
             .select("*")
             .eq("id_alumno", alumnoInfo.id)
             .order("anio", { ascending: false })
+            .order("periodo", { ascending: true })
             .order("materia", { ascending: true });
 
         if (errorHistorial) throw errorHistorial;
