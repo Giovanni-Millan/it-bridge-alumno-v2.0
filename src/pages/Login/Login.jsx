@@ -3,6 +3,7 @@ import logo from "./../../assets/logo.png";
 import Swal from "sweetalert2";
 import { supabase } from "../../supabaseClient";
 import { Eye, EyeOff, LogIn, Key, Mail, GraduationCap } from "lucide-react";
+import { mostrarError } from "../../utils/errorTraductor";
 
 export default function Login() {
   const [correo, setCorreo] = useState("");
@@ -30,22 +31,7 @@ export default function Login() {
       });
 
       if (error) {
-        console.error("SUPABASE LOGIN ERROR:", error);
-        if (error.message.toLowerCase().includes("email not confirmed")) {
-          Swal.fire({
-            icon: "warning",
-            title: "Correo no confirmado",
-            text: "Confirma tu correo antes de iniciar sesión.",
-            confirmButtonColor: "#6b21a5",
-          });
-          return;
-        }
-        Swal.fire({
-          icon: "error",
-          title: "Error de autenticación",
-          text: error.message,
-          confirmButtonColor: "#6b21a5",
-        });
+        mostrarError(error, "iniciar sesión");
         return;
       }
 
@@ -122,12 +108,7 @@ export default function Login() {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     if (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.message,
-        confirmButtonColor: "#6b21a5",
-      });
+      mostrarError(error, "recuperar tu contraseña");
     } else {
       Swal.fire({
         icon: "success",

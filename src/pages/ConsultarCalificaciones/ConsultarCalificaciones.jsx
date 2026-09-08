@@ -10,6 +10,7 @@ import {
   faArrowLeft
 } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { mostrarError } from '../../utils/errorTraductor';
 
 export default function ConsultarCalificaciones() {
 
@@ -114,13 +115,7 @@ export default function ConsultarCalificaciones() {
 
       } catch (err) {
 
-        console.error(err);
-
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: err.message
-        });
+        mostrarError(err, "consultar tus calificaciones");
 
       } finally {
 

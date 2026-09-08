@@ -11,6 +11,7 @@ import {
   faClockRotateLeft
 } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
+import { mostrarError } from '../../utils/errorTraductor';
 
 export default function HistorialAcademico() {
 
@@ -65,13 +66,7 @@ export default function HistorialAcademico() {
 
       } catch (err) {
 
-        console.error(err);
-
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: err.message
-        });
+        mostrarError(err, "consultar tu historial académico");
 
       } finally {
 

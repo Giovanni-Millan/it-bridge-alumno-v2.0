@@ -6,6 +6,7 @@ import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 import { isSeguimientoEmocionalHabilitado } from "../../utils/featureFlags";
+import { mostrarError } from "../../utils/errorTraductor";
 
 // Lista de preguntas (texto exacto del test)
 const preguntas = [
@@ -162,13 +163,7 @@ export default function RealizarSeguimientoEmocional() {
       .insert([insertData]);
 
     if (error) {
-      console.error(error);
-      Swal.fire({
-        icon: "error",
-        title: "Error al guardar",
-        text: error.message,
-        confirmButtonColor: "#6b21a8",
-      });
+      mostrarError(error, "guardar tu seguimiento emocional");
       return;
     }
 
