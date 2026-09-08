@@ -63,6 +63,11 @@ export default function ConsultarCalificaciones() {
               fecha_registro
             `)
             .eq("id_alumno", alumnoInfo.id)
+            // Más reciente primero. Funciona porque "ENE-ABR" < "MAY-AGO" <
+            // "SEP-DIC" alfabéticamente coincide con el orden cronológico
+            // dentro de un mismo año (mismo truco que en PendientesCalificaciones).
+            .order("ano_cuatrimestre", { ascending: false, nullsFirst: false })
+            .order("periodo_cuatrimestre", { ascending: false, nullsFirst: false })
             .order("materia", { ascending: true });
 
         if (errorCal) throw errorCal;
