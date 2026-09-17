@@ -74,8 +74,9 @@ export default function ConsultarCalificaciones() {
 
         if (errorCal) throw errorCal;
 
-        // 🧾 Calificaciones de Bachillerato (tabla "calificaciones_parciales",
-        // 3 parciales por materia en vez de una sola calificación final)
+        // 🧾 Calificaciones de Bachillerato/Secundaria (tabla "calificaciones_parciales",
+        // 3 parciales por materia en vez de una sola calificación final) —
+        // la consulta es agnóstica al tipo de alumno, solo filtra por id_alumno.
         const { data: parciales, error: errorParciales } =
           await supabase
             .from("calificaciones_parciales")
@@ -328,7 +329,7 @@ export default function ConsultarCalificaciones() {
           </div>
         )}
 
-        {/* TABLA BACHILLERATO: una fila por materia, sus 3 parciales juntos */}
+        {/* TABLA BACHILLERATO/SECUNDARIA: una fila por materia, sus 3 parciales juntos */}
 
         {bachillerato.length > 0 && (
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">

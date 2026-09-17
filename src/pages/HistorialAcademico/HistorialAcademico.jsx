@@ -204,14 +204,14 @@ export default function HistorialAcademico() {
                       <tr key={r.id} className="border-b hover:bg-purple-50">
                         <td className="py-3 px-6 font-medium">{r.materia}</td>
                         <td className="py-3 px-4 text-center">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${r.tipo === "Bachillerato" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}`}>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${r.tipo === "Bachillerato" ? "bg-red-100 text-red-700" : r.tipo === "Secundaria" ? "bg-indigo-100 text-indigo-700" : "bg-blue-100 text-blue-700"}`}>
                             {r.tipo}
                           </span>
                         </td>
                         <td className="py-3 px-4">{r.grupo_nombre ?? "-"}</td>
                         <td className="py-3 px-4">{r.carrera_nombre ?? "-"}</td>
                         <td className="py-3 px-4">{r.docente_nombre ?? "-"}</td>
-                        <td className="py-3 px-4 text-center">{r.tipo === "Bachillerato" ? (r.semestre ? `Semestre ${r.semestre}` : "-") : (r.periodo ?? "-")}</td>
+                        <td className="py-3 px-4 text-center">{r.tipo === "Bachillerato" ? (r.semestre ? `Semestre ${r.semestre}` : "-") : r.tipo === "Secundaria" ? (r.semestre ? `Grado ${r.semestre}` : "-") : (r.periodo ?? "-")}</td>
                         <td className="py-3 px-4 text-center">{r.anio ?? "-"}</td>
                         <td className="py-3 px-4 text-center font-bold">
                           {!isNaN(cal) ? cal.toFixed(1) : "-"}
