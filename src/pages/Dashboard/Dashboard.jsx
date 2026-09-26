@@ -40,7 +40,7 @@ export default function Dashboard() {
     // Obtener datos del alumno desde tabla "alumnos"
     const { data: alumnoData, error: alumnoError } = await supabase
       .from("alumnos")
-      .select("id, nombre, apellido_paterno, apellido_materno, correo, foto_url, acceso_bloqueado")
+      .select("id, nombre, apellido_paterno, apellido_materno, correo, foto_url, acceso_bloqueado, sedes(nombre)")
       .eq("id", userId)
       .single();
 
@@ -341,6 +341,11 @@ export default function Dashboard() {
                 Bienvenido, <span className="text-purple-700">{nombreCompleto}</span>
               </h2>
                <p className="text-gray-500 mt-1">{alumno?.correo}</p>
+              {alumno?.sedes?.nombre && (
+                <span className="inline-block mt-1 text-xs font-semibold bg-purple-50 text-purple-700 px-3 py-1 rounded-full">
+                  {alumno.sedes.nombre}
+                </span>
+              )}
             </div>
           </div>
           {/* Badge de fecha */}
