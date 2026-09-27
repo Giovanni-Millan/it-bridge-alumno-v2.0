@@ -1,3 +1,9 @@
-.logo{
-    height: 70px;
+.logo-sm{
+    height: 44px;
+}
+
+@media (min-width: 640px){
+    .logo-sm{
+        height: 70px;
+    }
 }

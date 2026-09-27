@@ -182,8 +182,11 @@ export default function HistorialAcademico() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
+            <p className="sm:hidden text-xs text-purple-600 bg-purple-50 px-4 py-2">
+              Desliza la tabla hacia los lados para ver todas las columnas →
+            </p>
+            <div className="overflow-x-auto scroll-touch">
+              <table className="min-w-full whitespace-nowrap">
                 <thead className="bg-purple-600 text-white">
                   <tr>
                     <th className="py-3 px-6 text-left">Materia</th>

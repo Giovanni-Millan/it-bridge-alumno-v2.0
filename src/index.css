@@ -17,3 +17,9 @@ h1{
 p{
     color: #374151;
 }
+
+/* Scroll táctil confiable en tablas dentro de contenedores con overflow-x-auto
+   (algunos navegadores móviles no dan momentum/drag sin esto) */
+.scroll-touch{
+    -webkit-overflow-scrolling: touch;
+}
